@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHRONO-SYNTH // Cybernetic Daily Command & Attendance System</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        neonPink: '#ff007f',
+                        neonCyan: '#00f3ff',
+                        neonPurple: '#9d00ff',
+                        neonYellow: '#ffea00',
+                        synthDark: '#0d0221',
+                        synthCard: '#150833',
+                        synthBorder: '#2a1154',
+                    },
+                    fontFamily: {
+                        mono: ['Share Tech Mono', 'Courier New', 'monospace'],
+                        orbitron: ['Orbitron', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow-pink': '0 0 15px rgba(255, 0, 127, 0.5), 0 0 30px rgba(255, 0, 127, 0.2)',
+                        'glow-cyan': '0 0 15px rgba(0, 243, 255, 0.5), 0 0 30px rgba(0, 243, 255, 0.2)',
+                        'glow-purple': '0 0 15px rgba(157, 0, 255, 0.5), 0 0 30px rgba(157, 0, 255, 0.2)',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome Icons & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <!-- Custom Synthwave Visual Styles -->
+    <style>
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .font-mono { font-family: 'Share Tech Mono', monospace; }
+
+        /* Synthwave Background Canvas */
+        #synth-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* Glassmorphism Synth Panels */
+        .synth-panel {
+            background: rgba(21, 8, 51, 0.8);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(0, 243, 255, 0.25);
+            box-shadow: 0 8px 32px 0 rgba(13, 2, 33, 0.8), inset 0 0 12px rgba(255, 0, 127, 0.1);
+        }
+
+        .synth-input {
+            background: rgba(13, 2, 33, 0.85);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            color: #00f3ff;
+            transition: all 0.2s ease;
+        }
+        .synth-input:focus {
+            outline: none;
+            border-color: #ff007f;
+            box-shadow: 0 0 12px rgba(255, 0, 127, 0.6);
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0d0221; }
+        ::-webkit-scrollbar-thumb { background: #ff007f; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00f3ff; }
+
+        /* CRT Scanline Overlay */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 6px 100%;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body class="h-full bg-synthDark font-mono text-slate-200 overflow-x-hidden antialiased select-none">
+
+    <!-- Scanline effect overlay -->
+    <div class="scanlines"></div>
+
+    <!-- 3D Synthwave Grid Animated Canvas -->
+    <canvas id="synth-canvas"></canvas>
+
+    <!-- AUTH GATE (GOOGLE SIMULATION SIGN-IN) -->
+    <div id="auth-gate-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+        <div class="synth-panel p-8 rounded-2xl max-w-md w-full border border-neonCyan shadow-glow-cyan text-center space-y-6">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-neonPink via-neonPurple to-neonCyan flex items-center justify-center shadow-glow-pink">
+                <i class="fas fa-terminal text-2xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="font-orbitron font-black text-2xl text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-neonCyan to-neonYellow tracking-wider">
+                    CHRONO-SYNTH
+                </h1>
+                <p class="text-xs text-neonCyan/80 font-mono mt-1">IDENTITY VERIFICATION GATEWAY</p>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Select your account or enter a profile tag to sync your routine, daily weighted tasks, and attendance predictions.
+            </p>
+
+            <div class="space-y-3">
+                <button onclick="loginWithProfile('Sagnik', 'sagnik@chrono-synth.io')" class="w-full py-3 px-4 rounded-xl bg-slate-900 border border-neonCyan/40 hover:border-neonPink hover:bg-neonPink/10 text-slate-100 flex items-center justify-between transition-all group">
+                    <div class="flex items-center space-x-3">
+                        <i class="fab fa-google text-neonCyan text-lg group-hover:text-neonPink"></i>
+                        <div class="text-left">
+                            <div class="font-orbitron text-xs font-bold text-neonCyan">Sagnik Profile</div>
+                            <div class="text-[10px] text-slate-400">sagnik@chrono-synth.io</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-xs text-slate-500 group-hover:text-neonPink"></i>
+                </button>
+
+                <button onclick="loginWithProfile('Friend Profile', 'friend@chrono-synth.io')" class="w-full py-3 px-4 rounded-xl bg-slate-900 border border-neonPurple/40 hover:border-neonCyan hover:bg-neonCyan/10 text-slate-100 flex items-center justify-between transition-all group">
+                    <div class="flex items-center space-x-3">
+                        <i class="fab fa-google text-neonPurple text-lg group-hover:text-neonCyan"></i>
+                        <div class="text-left">
+                            <div class="font-orbitron text-xs font-bold text-neonPurple">Friend Profile</div>
+                            <div class="text-[10px] text-slate-400">friend@chrono-synth.io</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-xs text-slate-500 group-hover:text-neonCyan"></i>
+                </button>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800">
+                <form onsubmit="handleCustomLogin(event)" class="flex gap-2">
+                    <input type="text" id="custom-user-input" placeholder="Or enter custom username..." required class="flex-1 synth-input rounded-xl p-2.5 text-xs">
+                    <button type="submit" class="bg-neonCyan text-slate-950 font-orbitron font-bold px-4 py-2.5 rounded-xl text-xs hover:bg-neonCyan/80">
+                        LOGIN
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP STRUCTURE -->
+    <div id="app-container" class="relative z-10 flex flex-col md:flex-row min-h-screen hidden">
+
+        <!-- SIDEBAR -->
+        <aside class="w-full md:w-64 bg-slate-950/85 border-r border-neonCyan/30 p-4 flex flex-col justify-between backdrop-blur-lg">
+            <div>
+                <!-- App Brand -->
+                <div class="flex items-center space-x-3 mb-6 px-2">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-neonPink to-neonPurple flex items-center justify-center text-white shadow-glow-pink font-bold text-lg font-orbitron">
+                        CS
+                    </div>
+                    <div>
+                        <h1 class="font-orbitron font-bold text-base text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-neonCyan to-neonYellow tracking-wider">
+                            CHRONO-SYNTH
+                        </h1>
+                        <p id="active-user-display" class="text-[10px] text-neonCyan font-mono">USER: --</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <nav class="space-y-1.5">
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center space-x-3 transition-all border border-transparent hover:border-neonPink/40 hover:bg-neonPink/10 text-neonCyan font-orbitron text-xs font-semibold">
+                        <i class="fas fa-tachometer-alt text-neonPink w-4"></i>
+                        <span>DAILY COMMAND</span>
+                    </button>
+                    <button onclick="switchTab('routine')" id="nav-routine" class="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center space-x-3 transition-all border border-transparent hover:border-neonCyan/40 hover:bg-neonCyan/10 text-slate-400 hover:text-neonCyan font-orbitron text-xs font-semibold">
+                        <i class="fas fa-calendar-alt text-neonCyan w-4"></i>
+                        <span>ROUTINE & OVERRIDES</span>
+                    </button>
+                    <button onclick="switchTab('attendance')" id="nav-attendance" class="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center space-x-3 transition-all border border-transparent hover:border-neonPurple/40 hover:bg-neonPurple/10 text-slate-400 hover:text-neonPurple font-orbitron text-xs font-semibold">
+                        <i class="fas fa-user-check text-neonPurple w-4"></i>
+                        <span>75% PREDICTOR</span>
+                    </button>
+                    <button onclick="switchTab('vacations')" id="nav-vacations" class="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center space-x-3 transition-all border border-transparent hover:border-neonYellow/40 hover:bg-neonYellow/10 text-slate-400 hover:text-neonYellow font-orbitron text-xs font-semibold">
+                        <i class="fas fa-umbrella-beach text-neonYellow w-4"></i>
+                        <span>HOLIDAYS / VACATIONS</span>
+                    </button>
+                    <button onclick="switchTab('analytics')" id="nav-analytics" class="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center space-x-3 transition-all border border-transparent hover:border-neonPink/40 hover:bg-neonPink/10 text-slate-400 hover:text-neonPink font-orbitron text-xs font-semibold">
+                        <i class="fas fa-chart-line text-neonPink w-4"></i>
+                        <span>EFFICIENCY MATRIX</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Date Picker & Account Actions -->
+            <div class="mt-6 pt-4 border-t border-slate-800 space-y-3">
+                <div>
+                    <label class="text-[10px] text-slate-400 font-orbitron uppercase tracking-wider block mb-1">SYSTEM DATE LOG</label>
+                    <input type="date" id="system-date-picker" onchange="handleDateChange(this.value)" class="w-full synth-input rounded-xl p-2 text-xs">
+                </div>
+
+                <!-- Semester End Target Date Configuration -->
+                <div>
+                    <label class="text-[10px] text-neonYellow font-orbitron uppercase tracking-wider block mb-1">CONSUME UNTIL DATE</label>
+                    <input type="date" id="semester-end-picker" onchange="handleSemesterEndChange(this.value)" class="w-full synth-input rounded-xl p-2 text-xs text-neonYellow border-neonYellow/40">
+                </div>
+
+                <div class="flex items-center justify-between text-[11px] pt-2">
+                    <button onclick="exportDataJSON()" class="text-neonCyan hover:underline"><i class="fas fa-download mr-1"></i>Export</button>
+                    <button onclick="openImportModal()" class="text-neonPurple hover:underline"><i class="fas fa-upload mr-1"></i>Import</button>
+                    <button onclick="switchAccount()" class="text-neonPink hover:underline"><i class="fas fa-sign-out-alt mr-1"></i>Switch</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 p-4 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
+
+            <!-- TAB 1: DAILY COMMAND DASHBOARD -->
+            <div id="tab-dashboard" class="tab-content space-y-6">
+                
+                <!-- Status Top Bar -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-synthCard/90 p-6 rounded-2xl border border-neonPink/40 shadow-glow-pink">
+                    <div>
+                        <span id="display-date-tag" class="text-neonCyan font-mono text-[11px] uppercase tracking-widest px-2.5 py-1 rounded-md bg-neonCyan/10 border border-neonCyan/30">LOG DATE</span>
+                        <h2 id="display-date-title" class="font-orbitron text-2xl md:text-3xl font-bold text-white mt-2">CHRONO DASHBOARD</h2>
+                        <p class="text-slate-400 text-xs mt-1">Morning task objectives & Night time weighted efficiency checkoff.</p>
+                    </div>
+
+                    <!-- Morning / Night Mode Switch -->
+                    <div class="flex items-center bg-slate-950/90 p-1 rounded-xl border border-neonCyan/30">
+                        <button id="btn-ritual-morning" onclick="setRitualMode('morning')" class="px-4 py-2 rounded-lg font-orbitron text-xs font-bold transition-all bg-neonPink text-white shadow-glow-pink">
+                            <i class="fas fa-sun mr-1.5"></i>MORNING RITUAL
+                        </button>
+                        <button id="btn-ritual-night" onclick="setRitualMode('night')" class="px-4 py-2 rounded-lg font-orbitron text-xs font-bold transition-all text-slate-400 hover:text-neonCyan">
+                            <i class="fas fa-moon mr-1.5"></i>NIGHT CHECKOFF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Vacation Active Alert -->
+                <div id="holiday-active-banner" class="hidden bg-neonYellow/10 border border-neonYellow/50 text-neonYellow p-4 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-umbrella-beach text-2xl"></i>
+                        <div>
+                            <h4 class="font-orbitron font-bold text-sm">VACATION / HOLIDAY PROTOCOL ACTIVE</h4>
+                            <p class="text-xs text-slate-300">Class attendance tracking is automatically paused for this date.</p>
+                        </div>
+                    </div>
+                    <span id="holiday-name-display" class="font-orbitron font-bold text-xs bg-neonYellow/20 px-3 py-1 rounded border border-neonYellow">HOLIDAY</span>
+                </div>
+
+                <!-- Main Grid: Tasks & Today Classes -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                    <!-- Left 2 Cols: Morning & Night Task Execution -->
+                    <div class="lg:col-span-2 space-y-6">
+
+                        <!-- MORNING RITUAL -->
+                        <div id="section-morning-ritual" class="synth-panel p-6 rounded-2xl border border-neonCyan/40">
+                            <h3 class="font-orbitron text-base font-bold text-neonCyan flex items-center gap-2 mb-4">
+                                <i class="fas fa-plus-circle text-neonPink"></i> MORNING RITUAL: DEFINE DAILY OBJECTIVES
+                            </h3>
+
+                            <form onsubmit="handleAddDailyTask(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-6">
+                                <input type="text" id="task-title-input" placeholder="Task description..." required class="sm:col-span-5 synth-input rounded-xl p-3 text-xs">
+                                <input type="number" id="task-duration-input" placeholder="Mins" min="5" max="720" required class="sm:col-span-2 synth-input rounded-xl p-3 text-xs">
+                                <select id="task-weight-input" class="sm:col-span-3 synth-input rounded-xl p-3 text-xs">
+                                    <option value="1">Low Weight (1x)</option>
+                                    <option value="2" selected>Medium Weight (2x)</option>
+                                    <option value="3">High Weight (3x)</option>
+                                    <option value="5">Critical Weight (5x)</option>
+                                </select>
+                                <button type="submit" class="sm:col-span-2 bg-gradient-to-r from-neonCyan to-neonPurple hover:from-neonPink hover:to-neonCyan text-slate-950 font-orbitron font-bold py-3 px-2 rounded-xl transition-all shadow-glow-cyan text-xs">
+                                    + ADD
+                                </button>
+                            </form>
+
+                            <!-- Task Table -->
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="border-b border-neonCyan/20 text-neonCyan font-orbitron uppercase">
+                                        <tr>
+                                            <th class="py-2.5 px-2">Objective</th>
+                                            <th class="py-2.5 px-2">Duration</th>
+                                            <th class="py-2.5 px-2">Priority Weight</th>
+                                            <th class="py-2.5 px-2">Status</th>
+                                            <th class="py-2.5 px-2 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="daily-tasks-tbody" class="divide-y divide-slate-800/80 font-mono">
+                                        <!-- Dynamic task items -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- NIGHT RITUAL -->
+                        <div id="section-night-ritual" class="synth-panel p-6 rounded-2xl border border-neonPurple/40 hidden">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-orbitron text-base font-bold text-neonPurple flex items-center gap-2">
+                                    <i class="fas fa-moon text-neonCyan"></i> NIGHT RITUAL: TIME LOG & WEIGHTED SCORE
+                                </h3>
+                                <button onclick="calculateAndSaveNightEfficiency()" class="bg-neonPink hover:bg-neonPink/80 text-white font-orbitron text-xs font-bold px-4 py-2 rounded-xl shadow-glow-pink">
+                                    CALCULATE & SAVE
+                                </button>
+                            </div>
+
+                            <p class="text-slate-400 text-xs mb-4">Check off completed objectives and log actual minutes spent. Weighted formula factors priority multipliers.</p>
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="border-b border-neonPurple/20 text-neonPurple font-orbitron uppercase">
+                                        <tr>
+                                            <th class="py-2.5 px-2">Done?</th>
+                                            <th class="py-2.5 px-2">Objective</th>
+                                            <th class="py-2.5 px-2">Weight</th>
+                                            <th class="py-2.5 px-2">Scheduled</th>
+                                            <th class="py-2.5 px-2">Actual Spent</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="night-tasks-tbody" class="divide-y divide-slate-800/80 font-mono">
+                                        <!-- Dynamic night items -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div id="night-score-card" class="mt-6 p-4 rounded-xl bg-slate-950/90 border border-neonCyan/30 flex items-center justify-between">
+                                <div>
+                                    <div class="text-[10px] text-slate-400 font-orbitron uppercase">NIGHT WEIGHTED EFFICIENCY SCORE</div>
+                                    <div id="night-score-value" class="text-3xl font-orbitron font-bold text-neonCyan mt-1">-- %</div>
+                                </div>
+                                <div id="night-score-badge" class="px-3 py-1 rounded text-xs font-bold font-orbitron bg-slate-800 text-slate-400">
+                                    UNSAVED
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right Col: Today Classes & Attendance Controls -->
+                    <div class="space-y-6">
+                        <div class="synth-panel p-6 rounded-2xl border border-neonYellow/30">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-orbitron text-sm font-bold text-neonYellow flex items-center gap-2">
+                                    <i class="fas fa-graduation-cap"></i> TODAY'S CLASSES
+                                </h3>
+                                <button onclick="openExtraClassModal()" class="text-xs font-orbitron text-neonCyan hover:underline">
+                                    + Extra Class
+                                </button>
+                            </div>
+
+                            <div id="today-classes-container" class="space-y-3">
+                                <!-- Dynamic classes list -->
+                            </div>
+                        </div>
+
+                        <!-- Stats & Streaks Widget -->
+                        <div class="synth-panel p-6 rounded-2xl border border-neonPink/30 space-y-4">
+                            <h4 class="font-orbitron text-xs font-bold text-slate-400 tracking-wider uppercase">PERFORMANCE STREAK MATRIX</h4>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800">
+                                    <div class="text-[10px] text-slate-400 font-orbitron">HIGH EFFICIENCY STREAK</div>
+                                    <div id="streak-counter" class="text-2xl font-orbitron font-bold text-neonCyan mt-1">0 DAYS</div>
+                                </div>
+                                <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800">
+                                    <div class="text-[10px] text-slate-400 font-orbitron">NIGHT EFFICIENCY</div>
+                                    <div id="stat-night-eff" class="text-2xl font-orbitron font-bold text-neonPink mt-1">N/A</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- TAB 2: ROUTINE & OVERRIDES CONFIGURATOR -->
+            <div id="tab-routine" class="tab-content space-y-6 hidden">
+                <div class="synth-panel p-6 rounded-2xl border border-neonCyan/30">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="font-orbitron text-2xl font-bold text-neonCyan">SEMESTER MASTER ROUTINE</h2>
+                            <p class="text-slate-400 text-xs mt-1">Configure your weekly schedule once. Loop indefinitely until semester conclusion.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="openAddRoutineSlotModal()" class="bg-neonCyan text-slate-950 font-orbitron font-bold px-4 py-2 rounded-xl text-xs hover:bg-neonCyan/80">
+                                + ADD CLASS SLOT
+                            </button>
+                            <button onclick="archiveCurrentSemesterPrompt()" class="bg-neonPink/20 text-neonPink border border-neonPink/40 font-orbitron font-bold px-4 py-2 rounded-xl text-xs hover:bg-neonPink hover:text-white">
+                                END & ARCHIVE SEMESTER
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Weekly Timetable Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3">
+                            <h3 class="font-orbitron text-xs font-bold text-neonPink border-b border-neonPink/20 pb-2">MONDAY</h3>
+                            <div id="routine-day-Monday" class="space-y-2"></div>
+                        </div>
+                        <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3">
+                            <h3 class="font-orbitron text-xs font-bold text-neonCyan border-b border-neonCyan/20 pb-2">TUESDAY</h3>
+                            <div id="routine-day-Tuesday" class="space-y-2"></div>
+                        </div>
+                        <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3">
+                            <h3 class="font-orbitron text-xs font-bold text-neonPurple border-b border-neonPurple/20 pb-2">WEDNESDAY</h3>
+                            <div id="routine-day-Wednesday" class="space-y-2"></div>
+                        </div>
+                        <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3">
+                            <h3 class="font-orbitron text-xs font-bold text-neonYellow border-b border-neonYellow/20 pb-2">THURSDAY</h3>
+                            <div id="routine-day-Thursday" class="space-y-2"></div>
+                        </div>
+                        <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3">
+                            <h3 class="font-orbitron text-xs font-bold text-emerald-400 border-b border-emerald-400/20 pb-2">FRIDAY</h3>
+                            <div id="routine-day-Friday" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: 75% ATTENDANCE PREDICTOR & SIMULATOR -->
+            <div id="tab-attendance" class="tab-content space-y-6 hidden">
+                <div class="synth-panel p-6 rounded-2xl border border-neonPurple/30">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="font-orbitron text-2xl font-bold text-neonPurple">75% ATTENDANCE PREDICTOR</h2>
+                            <p class="text-slate-400 text-xs mt-1">
+                                Safe-to-miss margin calculates remaining classes up to your target consume date:
+                                <span id="target-consume-display" class="text-neonYellow font-bold">--</span>
+                            </p>
+                        </div>
+                        <button onclick="openAddSubjectModal()" class="bg-neonPurple hover:bg-neonPurple/80 text-white font-orbitron font-bold px-4 py-2 rounded-xl text-xs shadow-glow-purple">
+                            + NEW SUBJECT
+                        </button>
+                    </div>
+
+                    <!-- Attendance Cards Grid -->
+                    <div id="subject-attendance-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Dynamic Subject Cards -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: HOLIDAYS & VACATIONS REGISTER -->
+            <div id="tab-vacations" class="tab-content space-y-6 hidden">
+                <div class="synth-panel p-6 rounded-2xl border border-neonYellow/30">
+                    <h2 class="font-orbitron text-2xl font-bold text-neonYellow mb-2">HOLIDAYS & VACATIONS REGISTER</h2>
+                    <p class="text-slate-400 text-xs mb-6">Mark official holidays or vacation breaks. Pauses class attendance requirements during these dates.</p>
+
+                    <form onsubmit="handleAddVacation(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-6 bg-slate-950/70 p-4 rounded-xl border border-slate-800">
+                        <input type="text" id="vacation-name-input" placeholder="Holiday Title..." required class="sm:col-span-4 synth-input rounded-xl p-2.5 text-xs">
+                        <input type="date" id="vacation-start-input" required class="sm:col-span-3 synth-input rounded-xl p-2.5 text-xs">
+                        <input type="date" id="vacation-end-input" required class="sm:col-span-3 synth-input rounded-xl p-2.5 text-xs">
+                        <button type="submit" class="sm:col-span-2 bg-neonYellow text-slate-950 font-orbitron font-bold py-2.5 px-3 rounded-xl text-xs hover:bg-neonYellow/80">
+                            + REGISTER
+                        </button>
+                    </form>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="border-b border-neonYellow/20 text-neonYellow font-orbitron uppercase">
+                                <tr>
+                                    <th class="py-2.5 px-4">Title</th>
+                                    <th class="py-2.5 px-4">Start Date</th>
+                                    <th class="py-2.5 px-4">End Date</th>
+                                    <th class="py-2.5 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vacations-tbody" class="divide-y divide-slate-800/80 font-mono">
+                                <!-- Vacation log rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: EFFICIENCY MATRIX & ARCHIVES -->
+            <div id="tab-analytics" class="tab-content space-y-6 hidden">
+                <div class="synth-panel p-6 rounded-2xl border border-neonPink/30 space-y-6">
+                    <h2 class="font-orbitron text-2xl font-bold text-neonPink">WEEKLY EFFICIENCY & HISTORY MATRIX</h2>
+                    
+                    <!-- Visual Trend Line / Bars -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+                        <h4 class="font-orbitron text-xs font-bold text-neonCyan mb-3">LAST 7 DAYS EFFICIENCY TREND</h4>
+                        <div id="weekly-chart-container" class="flex items-end justify-between h-36 gap-2 pt-4 px-2 border-b border-slate-800">
+                            <!-- Dynamic trend bars -->
+                        </div>
+                    </div>
+
+                    <!-- History Log Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="border-b border-neonPink/20 text-neonPink font-orbitron uppercase">
+                                <tr>
+                                    <th class="py-2.5 px-4">Date</th>
+                                    <th class="py-2.5 px-4">Tasks Done / Total</th>
+                                    <th class="py-2.5 px-4">Scheduled Time</th>
+                                    <th class="py-2.5 px-4">Actual Time Spent</th>
+                                    <th class="py-2.5 px-4">Night Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analytics-history-tbody" class="divide-y divide-slate-800/80 font-mono">
+                                <!-- History log -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- FLOATING GEMINI AI ASSISTANT -->
+    <div class="fixed bottom-6 right-6 z-40">
+        <button onclick="toggleGeminiChat()" class="w-14 h-14 rounded-full bg-gradient-to-tr from-neonPink via-neonPurple to-neonCyan p-0.5 shadow-glow-pink hover:scale-105 transition-transform flex items-center justify-center">
+            <div class="w-full h-full bg-slate-950 rounded-full flex items-center justify-center text-neonCyan">
+                <i class="fas fa-robot text-xl"></i>
+            </div>
+        </button>
+
+        <div id="gemini-chat-window" class="hidden absolute bottom-16 right-0 w-80 sm:w-96 h-[480px] synth-panel rounded-2xl border border-neonCyan/40 shadow-2xl flex flex-col overflow-hidden">
+            <div class="bg-slate-950/90 p-3.5 border-b border-neonCyan/20 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-neonCyan animate-ping"></span>
+                    <span class="font-orbitron font-bold text-xs text-neonCyan">CYBER-AI ASSISTANT</span>
+                </div>
+                <button onclick="toggleGeminiChat()" class="text-slate-400 hover:text-neonPink text-xs">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div id="gemini-messages" class="flex-1 p-4 overflow-y-auto space-y-3 font-mono text-xs">
+                <div class="bg-neonPurple/20 border border-neonPurple/30 p-3 rounded-xl text-slate-200">
+                    <span class="text-neonCyan font-bold">CYBER-AI:</span> Greetings Operator. Ask me anything about task optimization, Fedora terminal queries, or routine planning.
+                </div>
+            </div>
+
+            <form onsubmit="handleGeminiQuery(event)" class="p-3 bg-slate-950/90 border-t border-neonCyan/20 flex gap-2">
+                <input type="text" id="gemini-input" placeholder="Type prompt..." required class="flex-1 synth-input rounded-xl px-3 py-2 text-xs">
+                <button type="submit" class="bg-neonCyan text-slate-950 px-3 py-2 rounded-xl font-orbitron font-bold text-xs hover:bg-neonCyan/80">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 1: ADD ROUTINE SLOT -->
+    <div id="modal-routine-slot" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="synth-panel p-6 rounded-2xl border border-neonCyan/40 max-w-md w-full space-y-4">
+            <h3 class="font-orbitron font-bold text-neonCyan text-base">ADD WEEKLY CLASS SLOT</h3>
+            <form onsubmit="handleSaveRoutineSlot(event)" class="space-y-3">
+                <div>
+                    <label class="text-[10px] text-slate-400 font-orbitron">SUBJECT NAME</label>
+                    <input type="text" id="modal-slot-subject" required class="w-full synth-input rounded-xl p-2.5 text-xs mt-1">
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-400 font-orbitron">DAY OF WEEK</label>
+                    <select id="modal-slot-day" class="w-full synth-input rounded-xl p-2.5 text-xs mt-1">
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] text-slate-400 font-orbitron">START TIME</label>
+                        <input type="time" id="modal-slot-start" required class="w-full synth-input rounded-xl p-2.5 text-xs mt-1">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 font-orbitron">END TIME</label>
+                        <input type="time" id="modal-slot-end" required class="w-full synth-input rounded-xl p-2.5 text-xs mt-1">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modal-routine-slot')" class="px-4 py-2 rounded-xl text-xs font-orbitron border border-slate-700 text-slate-400">CANCEL</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl text-xs font-orbitron font-bold bg-neonCyan text-slate-950">SAVE</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ADD EXTRA CLASS FOR TODAY -->
+    <div id="modal-extra-class" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="synth-panel p-6 rounded-2xl border border-neonYellow/40 max-w-md w-full space-y-4">
+            <h3 class="font-orbitron font-bold text-neonYellow text-base">ADD EXTRA CLASS FOR TODAY</h3>
+            <form onsubmit="handleSaveExtraClass(event)" class="space-y-3">
+                <div>
+                    <label class="text-[10px] text-slate-400 font-orbitron">SUBJECT NAME</label>
+                    <input type="text" id="modal-extra-subject" required class="w-full synth-input rounded-xl p-2.5 text-xs mt-1">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] text-slate-400 font-orbitron">START TIME</label>
+                        <input type="time" id="modal-extra-start" required class="w-full synth-input rounded-xl p-2.5 text-xs mt-1">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 font-orbitron">END TIME</label>
+                        <input type="time" id="modal-extra-end" required class="w-full synth-input rounded-xl p-2.5 text-xs mt-1">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modal-extra-class')" class="px-4 py-2 rounded-xl text-xs font-orbitron border border-slate-700 text-slate-400">CANCEL</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl text-xs font-orbitron font-bold bg-neonYellow text-slate-950">ADD</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: ADD NEW SUBJECT -->
+    <div id="modal-new-subject" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="synth-panel p-6 rounded-2xl border border-neonPurple/40 max-w-md w-full space-y-4">
+            <h3 class="font-orbitron font-bold text-neonPurple text-base">REGISTER NEW SUBJECT</h3>
+            <form onsubmit="handleSaveSubject(event)" class="space-y-3">
+                <div>
+                    <label class="text-[10px] text-slate-400 font-orbitron">SUBJECT NAME</label>
+                    <input type="text" id="modal-subject-name" required class="w-full synth-input rounded-xl p-2.5 text-xs mt-1">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modal-new-subject')" class="px-4 py-2 rounded-xl text-xs font-orbitron border border-slate-700 text-slate-400">CANCEL</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl text-xs font-orbitron font-bold bg-neonPurple text-white">REGISTER</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: JSON IMPORT -->
+    <div id="modal-import" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="synth-panel p-6 rounded-2xl border border-neonCyan/40 max-w-md w-full space-y-4">
+            <h3 class="font-orbitron font-bold text-neonCyan text-base">RESTORE BACKUP DATA</h3>
+            <p class="text-xs text-slate-400">Paste your exported JSON backup data string below to overwrite and restore your profile state.</p>
+            <textarea id="import-json-input" rows="6" placeholder="Paste JSON text here..." class="w-full synth-input rounded-xl p-2.5 text-xs font-mono"></textarea>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeModal('modal-import')" class="px-4 py-2 rounded-xl text-xs font-orbitron border border-slate-700 text-slate-400">CANCEL</button>
+                <button type="button" onclick="handleImportJSON()" class="px-4 py-2 rounded-xl text-xs font-orbitron font-bold bg-neonCyan text-slate-950">RESTORE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPLICATION JAVASCRIPT ARCHITECTURE -->
+    <script>
+        // --- DATA MODELS & PERSISTENCE ---
+        let currentProfileKey = null;
+        let currentUserEmail = null;
+
+        const DEFAULT_PROFILE_STATE = {
+            currentDate: new Date().toISOString().split('T')[0],
+            semesterEndDate: '2026-12-15',
+            routine: [
+                { id: '1', day: 'Monday', subject: 'Mathematics', startTime: '09:00', endTime: '10:30' },
+                { id: '2', day: 'Monday', subject: 'Computer Networks', startTime: '11:00', endTime: '12:30' },
+                { id: '3', day: 'Tuesday', subject: 'Operating Systems', startTime: '10:00', endTime: '11:30' },
+                { id: '4', day: 'Wednesday', subject: 'Mathematics', startTime: '09:00', endTime: '10:30' },
+                { id: '5', day: 'Thursday', subject: 'Database Systems', startTime: '14:00', endTime: '15:30' },
+                { id: '6', day: 'Friday', subject: 'Computer Networks', startTime: '11:00', endTime: '12:30' }
+            ],
+            subjects: ['Mathematics', 'Computer Networks', 'Operating Systems', 'Database Systems'],
+            attendanceLogs: {}, // YYYY-MM-DD -> { subjectName: 'present' | 'absent' | 'canceled' }
+            extraClasses: {},    // YYYY-MM-DD -> [ { id, subject, startTime, endTime } ]
+            dailyTasks: {},      // YYYY-MM-DD -> [ { id, title, duration, weight, completed, actualSpent } ]
+            nightEfficiencyLogs: {}, // YYYY-MM-DD -> score
+            vacations: [],       // [ { id, name, startDate, endDate } ]
+            archives: []         // Arvhived semester snapshots
+        };
+
+        let state = {};
+
+        function loadProfileState(profileName) {
+            currentProfileKey = 'CHRONO_PROFILE_' + profileName.toUpperCase().replace(/\s+/g, '_');
+            const stored = localStorage.getItem(currentProfileKey);
+            if (stored) {
+                state = JSON.parse(stored);
+            } else {
+                state = JSON.parse(JSON.stringify(DEFAULT_PROFILE_STATE));
+                state.currentDate = new Date().toISOString().split('T')[0];
+                saveProfileState();
+            }
+        }
+
+        function saveProfileState() {
+            if (currentProfileKey) {
+                localStorage.setItem(currentProfileKey, JSON.stringify(state));
+            }
+        }
+
+        // Auth handling
+        function loginWithProfile(name, email) {
+            currentUserEmail = email;
+            loadProfileState(name);
+            document.getElementById('active-user-display').innerText = `USER: ${name.toUpperCase()}`;
+            document.getElementById('auth-gate-modal').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            document.getElementById('system-date-picker').value = state.currentDate;
+            document.getElementById('semester-end-picker').value = state.semesterEndDate || '2026-12-15';
+            
+            initSynthCanvas();
+            renderAllViews();
+        }
+
+        function handleCustomLogin(e) {
+            e.preventDefault();
+            const val = document.getElementById('custom-user-input').value.trim();
+            if (val) {
+                loginWithProfile(val, `${val.toLowerCase()}@chrono-synth.io`);
+            }
+        }
+
+        function switchAccount() {
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('auth-gate-modal').classList.remove('hidden');
+        }
+
+        // Date handlers
+        function handleDateChange(newDate) {
+            state.currentDate = newDate;
+            saveProfileState();
+            renderAllViews();
+        }
+
+        function handleSemesterEndChange(newDate) {
+            state.semesterEndDate = newDate;
+            saveProfileState();
+            renderAllViews();
+        }
+
+        // Tab switcher
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            ['dashboard', 'routine', 'attendance', 'vacations', 'analytics'].forEach(id => {
+                const navBtn = document.getElementById(`nav-${id}`);
+                if (navBtn) {
+                    if (id === tabId) {
+                        navBtn.classList.add('border-neonPink/40', 'bg-neonPink/10', 'text-neonCyan');
+                        navBtn.classList.remove('text-slate-400');
+                    } else {
+                        navBtn.classList.remove('border-neonPink/40', 'bg-neonPink/10', 'text-neonCyan');
+                        navBtn.classList.add('text-slate-400');
+                    }
+                }
+            });
+        }
+
+        function setRitualMode(mode) {
+            const mBtn = document.getElementById('btn-ritual-morning');
+            const nBtn = document.getElementById('btn-ritual-night');
+            const mSec = document.getElementById('section-morning-ritual');
+            const nSec = document.getElementById('section-night-ritual');
+
+            if (mode === 'morning') {
+                mBtn.className = "px-4 py-2 rounded-lg font-orbitron text-xs font-bold transition-all bg-neonPink text-white shadow-glow-pink";
+                nBtn.className = "px-4 py-2 rounded-lg font-orbitron text-xs font-bold transition-all text-slate-400 hover:text-neonCyan";
+                mSec.classList.remove('hidden');
+                nSec.classList.add('hidden');
+            } else {
+                nBtn.className = "px-4 py-2 rounded-lg font-orbitron text-xs font-bold transition-all bg-neonPurple text-white shadow-glow-purple";
+                mBtn.className = "px-4 py-2 rounded-lg font-orbitron text-xs font-bold transition-all text-slate-400 hover:text-neonCyan";
+                nSec.classList.remove('hidden');
+                mSec.classList.add('hidden');
+            }
+        }
+
+        // --- RENDER PIPELINE ---
+        function renderAllViews() {
+            renderHeaderAndHoliday();
+            renderDailyTasks();
+            renderTodayClasses();
+            renderRoutineGrid();
+            renderAttendanceGrid();
+            renderVacationsList();
+            renderAnalyticsAndChart();
+        }
+
+        function checkIsVacation(dateStr) {
+            return state.vacations.find(v => dateStr >= v.startDate && dateStr <= v.endDate);
+        }
+
+        function renderHeaderAndHoliday() {
+            const dateObj = new Date(state.currentDate + 'T00:00:00');
+            const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+            document.getElementById('display-date-title').innerText = dateObj.toLocaleDateString('en-US', options).toUpperCase();
+            
+            const isVac = checkIsVacation(state.currentDate);
+            const vacBanner = document.getElementById('holiday-active-banner');
+            if (isVac) {
+                vacBanner.classList.remove('hidden');
+                document.getElementById('holiday-name-display').innerText = isVac.name.toUpperCase();
+            } else {
+                vacBanner.classList.add('hidden');
+            }
+
+            document.getElementById('target-consume-display').innerText = state.semesterEndDate || 'NOT SET';
+        }
+
+        // Task & Weighted Night Calculation
+        function handleAddDailyTask(e) {
+            e.preventDefault();
+            const title = document.getElementById('task-title-input').value.trim();
+            const duration = parseInt(document.getElementById('task-duration-input').value);
+            const weight = parseInt(document.getElementById('task-weight-input').value) || 1;
+
+            if (!state.dailyTasks[state.currentDate]) {
+                state.dailyTasks[state.currentDate] = [];
+            }
+
+            state.dailyTasks[state.currentDate].push({
+                id: Date.now().toString(),
+                title: title,
+                duration: duration,
+                weight: weight,
+                completed: false,
+                actualSpent: duration
+            });
+
+            saveProfileState();
+            document.getElementById('task-title-input').value = '';
+            document.getElementById('task-duration-input').value = '';
+            renderDailyTasks();
+        }
+
+        function toggleTaskComplete(taskId) {
+            const tasks = state.dailyTasks[state.currentDate] || [];
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.completed = !task.completed;
+                saveProfileState();
+                renderDailyTasks();
+            }
+        }
+
+        function deleteTask(taskId) {
+            if (state.dailyTasks[state.currentDate]) {
+                state.dailyTasks[state.currentDate] = state.dailyTasks[state.currentDate].filter(t => t.id !== taskId);
+                saveProfileState();
+                renderDailyTasks();
+            }
+        }
+
+        function updateActualTime(taskId, minutes) {
+            const tasks = state.dailyTasks[state.currentDate] || [];
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.actualSpent = parseInt(minutes) || 0;
+                saveProfileState();
+            }
+        }
+
+        function getWeightLabel(w) {
+            switch(parseInt(w)) {
+                case 1: return '<span class="text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded text-[10px]">Low (1x)</span>';
+                case 2: return '<span class="text-neonCyan border border-neonCyan/40 px-1.5 py-0.5 rounded text-[10px]">Med (2x)</span>';
+                case 3: return '<span class="text-neonYellow border border-neonYellow/40 px-1.5 py-0.5 rounded text-[10px]">High (3x)</span>';
+                case 5: return '<span class="text-neonPink border border-neonPink/40 px-1.5 py-0.5 rounded text-[10px]">Crit (5x)</span>';
+                default: return `<span class="text-slate-300 border border-slate-700 px-1.5 py-0.5 rounded text-[10px]">${w}x</span>`;
+            }
+        }
+
+        function renderDailyTasks() {
+            const tasks = state.dailyTasks[state.currentDate] || [];
+            const tbodyMorning = document.getElementById('daily-tasks-tbody');
+            const tbodyNight = document.getElementById('night-tasks-tbody');
+
+            tbodyMorning.innerHTML = '';
+            tbodyNight.innerHTML = '';
+
+            if (tasks.length === 0) {
+                tbodyMorning.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500 italic">No tasks set for today. Use the form above to add objectives.</td></tr>`;
+                tbodyNight.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500 italic">No morning tasks available for night checkoff.</td></tr>`;
+            } else {
+                tasks.forEach(t => {
+                    const w = t.weight || 1;
+
+                    // Morning Row
+                    const trM = document.createElement('tr');
+                    trM.innerHTML = `
+                        <td class="py-2.5 px-2 ${t.completed ? 'line-through text-slate-500' : 'text-slate-200'}">${t.title}</td>
+                        <td class="py-2.5 px-2 text-neonCyan">${t.duration} min</td>
+                        <td class="py-2.5 px-2">${getWeightLabel(w)}</td>
+                        <td class="py-2.5 px-2">
+                            <span class="px-2 py-0.5 rounded text-[10px] ${t.completed ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'}">
+                                ${t.completed ? 'DONE' : 'PENDING'}
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-2 text-right">
+                            <button onclick="deleteTask('${t.id}')" class="text-slate-500 hover:text-neonPink"><i class="fas fa-trash"></i></button>
+                        </td>
+                    `;
+                    tbodyMorning.appendChild(trM);
+
+                    // Night Row
+                    const trN = document.createElement('tr');
+                    trN.innerHTML = `
+                        <td class="py-2.5 px-2">
+                            <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTaskComplete('${t.id}')" class="w-4 h-4 accent-neonPurple">
+                        </td>
+                        <td class="py-2.5 px-2 ${t.completed ? 'text-neonCyan font-bold' : 'text-slate-400'}">${t.title}</td>
+                        <td class="py-2.5 px-2">${getWeightLabel(w)}</td>
+                        <td class="py-2.5 px-2 text-slate-400">${t.duration} min</td>
+                        <td class="py-2.5 px-2">
+                            <input type="number" value="${t.actualSpent || t.duration}" onchange="updateActualTime('${t.id}', this.value)" class="w-20 synth-input rounded p-1 text-xs"> min
+                        </td>
+                    `;
+                    tbodyNight.appendChild(trN);
+                });
+            }
+
+            const score = state.nightEfficiencyLogs[state.currentDate];
+            if (score !== undefined) {
+                document.getElementById('stat-night-eff').innerText = score + '%';
+                document.getElementById('night-score-value').innerText = score + '%';
+                document.getElementById('night-score-badge').innerText = 'LOGGED';
+                document.getElementById('night-score-badge').className = 'px-3 py-1 rounded text-xs font-bold font-orbitron bg-neonCyan/20 text-neonCyan border border-neonCyan';
+            } else {
+                document.getElementById('stat-night-eff').innerText = 'N/A';
+                document.getElementById('night-score-value').innerText = '-- %';
+                document.getElementById('night-score-badge').innerText = 'UNSAVED';
+                document.getElementById('night-score-badge').className = 'px-3 py-1 rounded text-xs font-bold font-orbitron bg-slate-800 text-slate-400';
+            }
+
+            calculateEfficiencyStreak();
+        }
+
+        function calculateAndSaveNightEfficiency() {
+            const tasks = state.dailyTasks[state.currentDate] || [];
+            if (tasks.length === 0) {
+                alert("No tasks defined for today.");
+                return;
+            }
+
+            let totalScheduledWeighted = 0;
+            let completedWeighted = 0;
+
+            tasks.forEach(t => {
+                const w = t.weight || 1;
+                totalScheduledWeighted += (t.duration * w);
+                if (t.completed) {
+                    completedWeighted += (t.duration * w);
+                }
+            });
+
+            const score = totalScheduledWeighted > 0 
+                ? Math.min(100, Math.round((completedWeighted / totalScheduledWeighted) * 100))
+                : 0;
+
+            state.nightEfficiencyLogs[state.currentDate] = score;
+            saveProfileState();
+            renderDailyTasks();
+            renderAnalyticsAndChart();
+            alert(`Night Weighted Efficiency score calculated & saved: ${score}%`);
+        }
+
+        function calculateEfficiencyStreak() {
+            const dates = Object.keys(state.nightEfficiencyLogs).sort().reverse();
+            let streak = 0;
+            for (let d of dates) {
+                if (state.nightEfficiencyLogs[d] >= 70) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+            document.getElementById('streak-counter').innerText = `${streak} DAYS`;
+        }
+
+        // Today Classes & Attendance
+        function renderTodayClasses() {
+            const container = document.getElementById('today-classes-container');
+            container.innerHTML = '';
+
+            const isVac = checkIsVacation(state.currentDate);
+            const dateObj = new Date(state.currentDate + 'T00:00:00');
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayName = days[dateObj.getDay()];
+
+            const routineClasses = state.routine.filter(r => r.day === dayName);
+            const extra = state.extraClasses[state.currentDate] || [];
+            const allClasses = [...routineClasses, ...extra];
+
+            if (allClasses.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-500 italic p-2">No classes scheduled for ${dayName}.</p>`;
+                return;
+            }
+
+            const todayLogs = state.attendanceLogs[state.currentDate] || {};
+
+            allClasses.forEach(cls => {
+                const currentStatus = todayLogs[cls.subject] || 'pending';
+
+                const card = document.createElement('div');
+                card.className = "p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col space-y-2";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="font-orbitron text-xs font-bold text-white">${cls.subject}</span>
+                            <div class="text-[10px] text-slate-400 font-mono">${cls.startTime} - ${cls.endTime}</div>
+                        </div>
+                        ${isVac ? '<span class="text-[10px] text-neonYellow font-orbitron">PAUSED (VACATION)</span>' : ''}
+                    </div>
+
+                    ${!isVac ? `
+                    <div class="flex items-center space-x-1.5 pt-1.5 border-t border-slate-800">
+                        <button onclick="markAttendance('${cls.subject}', 'present')" class="flex-1 py-1 rounded text-[10px] font-orbitron font-bold transition-colors ${currentStatus === 'present' ? 'bg-emerald-500 text-slate-950 shadow-glow-cyan' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-emerald-400'}">
+                            PRESENT
+                        </button>
+                        <button onclick="markAttendance('${cls.subject}', 'absent')" class="flex-1 py-1 rounded text-[10px] font-orbitron font-bold transition-colors ${currentStatus === 'absent' ? 'bg-neonPink text-white shadow-glow-pink' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-neonPink'}">
+                            ABSENT
+                        </button>
+                        <button onclick="markAttendance('${cls.subject}', 'canceled')" class="flex-1 py-1 rounded text-[10px] font-orbitron font-bold transition-colors ${currentStatus === 'canceled' ? 'bg-neonYellow text-slate-950' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-neonYellow'}">
+                            CANCELED
+                        </button>
+                    </div>
+                    <button onclick="simulateSkipToday('${cls.subject}')" class="text-[10px] font-orbitron text-neonCyan/80 hover:text-neonPink text-center pt-1 underline">
+                        <i class="fas fa-calculator mr-1"></i>"Can I Skip Today?" Simulator
+                    </button>
+                    ` : ''}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function markAttendance(subject, status) {
+            if (!state.attendanceLogs[state.currentDate]) {
+                state.attendanceLogs[state.currentDate] = {};
+            }
+            state.attendanceLogs[state.currentDate][subject] = status;
+            saveProfileState();
+            renderTodayClasses();
+            renderAttendanceGrid();
+        }
+
+        function simulateSkipToday(subject) {
+            const stats = calculateSubjectMetrics(subject);
+            const futureAttended = stats.totalHeldSoFar + 1;
+            const simulatedPresent = stats.presentSoFar; // If skipped today, present doesn't increase
+            const simulatedPct = Math.round((simulatedPresent / futureAttended) * 100);
+
+            let msg = `SIMULATION FOR [${subject.toUpperCase()}]:\n` +
+                      `Current Attendance: ${stats.currentPct}%\n` +
+                      `If you SKIP today's class, attendance drops to: ${simulatedPct}%\n\n`;
+
+            if (simulatedPct >= 75) {
+                msg += `STATUS: SAFE! You will remain above the 75% threshold.`;
+            } else {
+                msg += `STATUS: WARNING! Skipping today drops you below the 75% mandatory threshold.`;
+            }
+
+            alert(msg);
+        }
+
+        // Routine Grid
+        function renderRoutineGrid() {
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+            days.forEach(day => {
+                const dayContainer = document.getElementById(`routine-day-${day}`);
+                if (!dayContainer) return;
+                dayContainer.innerHTML = '';
+
+                const slots = state.routine.filter(r => r.day === day);
+                if (slots.length === 0) {
+                    dayContainer.innerHTML = `<span class="text-[10px] text-slate-600 italic">No classes</span>`;
+                } else {
+                    slots.forEach(s => {
+                        const div = document.createElement('div');
+                        div.className = "p-2 rounded bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs";
+                        div.innerHTML = `
+                            <div>
+                                <div class="font-bold text-slate-200">${s.subject}</div>
+                                <div class="text-[10px] text-neonCyan font-mono">${s.startTime} - ${s.endTime}</div>
+                            </div>
+                            <button onclick="deleteRoutineSlot('${s.id}')" class="text-slate-600 hover:text-neonPink text-[10px]"><i class="fas fa-times"></i></button>
+                        `;
+                        dayContainer.appendChild(div);
+                    });
+                }
+            });
+        }
+
+        function handleSaveRoutineSlot(e) {
+            e.preventDefault();
+            const subject = document.getElementById('modal-slot-subject').value.trim();
+            const day = document.getElementById('modal-slot-day').value;
+            const startTime = document.getElementById('modal-slot-start').value;
+            const endTime = document.getElementById('modal-slot-end').value;
+
+            state.routine.push({ id: Date.now().toString(), day, subject, startTime, endTime });
+            if (!state.subjects.includes(subject)) {
+                state.subjects.push(subject);
+            }
+
+            saveProfileState();
+            closeModal('modal-routine-slot');
+            renderRoutineGrid();
+            renderAttendanceGrid();
+            renderTodayClasses();
+        }
+
+        function deleteRoutineSlot(id) {
+            state.routine = state.routine.filter(r => r.id !== id);
+            saveProfileState();
+            renderRoutineGrid();
+            renderTodayClasses();
+            renderAttendanceGrid();
+        }
+
+        function archiveCurrentSemesterPrompt() {
+            if (confirm("End and Archive Current Semester? This will lock current logs into history and reset attendance for a new semester.")) {
+                state.archives.push({
+                    archivedAt: new Date().toISOString(),
+                    attendanceSnapshot: state.attendanceLogs,
+                    subjectsSnapshot: state.subjects,
+                    routineSnapshot: state.routine
+                });
+                state.attendanceLogs = {};
+                saveProfileState();
+                renderAllViews();
+                alert("Semester archived successfully!");
+            }
+        }
+
+        // 75% Attendance Math & Predictor
+        function calculateSubjectMetrics(subject) {
+            let present = 0;
+            let absent = 0;
+            let canceled = 0;
+
+            Object.keys(state.attendanceLogs).forEach(dateStr => {
+                if (checkIsVacation(dateStr)) return;
+                const status = state.attendanceLogs[dateStr][subject];
+                if (status === 'present') present++;
+                if (status === 'absent') absent++;
+                if (status === 'canceled') canceled++;
+            });
+
+            const totalHeldSoFar = present + absent;
+            const currentPct = totalHeldSoFar > 0 ? Math.round((present / totalHeldSoFar) * 100) : 100;
+
+            // Future class prediction up to target semester end date
+            let projectedFutureClasses = 0;
+            const todayObj = new Date(state.currentDate + 'T00:00:00');
+            const targetEndObj = new Date((state.semesterEndDate || state.currentDate) + 'T00:00:00');
+
+            if (targetEndObj >= todayObj) {
+                let curr = new Date(todayObj);
+                const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+                while (curr <= targetEndObj) {
+                    const dateStr = curr.toISOString().split('T')[0];
+                    if (!checkIsVacation(dateStr)) {
+                        const dName = daysOfWeek[curr.getDay()];
+                        const countInRoutine = state.routine.filter(r => r.day === dName && r.subject === subject).length;
+                        projectedFutureClasses += countInRoutine;
+                    }
+                    curr.setDate(curr.getDate() + 1);
+                }
+            }
+
+            const totalProjected = totalHeldSoFar + projectedFutureClasses;
+            const maxPossiblePresent = present + projectedFutureClasses;
+
+            // Safe to miss calculation formula:
+            // Find max skips (S) such that (MaxPresent - S) / TotalProjected >= 0.75
+            let safeToMiss = 0;
+            if (totalProjected > 0) {
+                for (let skips = projectedFutureClasses; skips >= 0; skips--) {
+                    const projectedPresent = maxPossiblePresent - skips;
+                    if ((projectedPresent / totalProjected) >= 0.75) {
+                        safeToMiss = skips;
+                        break;
+                    }
+                }
+            }
+
+            // Catchup needed if current < 75%
+            let catchupNeeded = 0;
+            if (currentPct < 75) {
+                // (present + C) / (totalHeld + C) >= 0.75 => C >= 3*totalHeld - 4*present
+                catchupNeeded = Math.max(0, (3 * totalHeldSoFar) - (4 * present));
+            }
+
+            return {
+                presentSoFar: present,
+                absentSoFar: absent,
+                canceledSoFar: canceled,
+                totalHeldSoFar: totalHeldSoFar,
+                currentPct: currentPct,
+                projectedFutureClasses: projectedFutureClasses,
+                safeToMiss: safeToMiss,
+                catchupNeeded: catchupNeeded
+            };
+        }
+
+        function renderAttendanceGrid() {
+            const grid = document.getElementById('subject-attendance-grid');
+            grid.innerHTML = '';
+
+            state.subjects.forEach(subj => {
+                const metrics = calculateSubjectMetrics(subj);
+
+                let badgeColor = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+                if (metrics.currentPct < 75) badgeColor = 'bg-neonPink/20 text-neonPink border-neonPink/30';
+                else if (metrics.currentPct < 80) badgeColor = 'bg-neonYellow/20 text-neonYellow border-neonYellow/30';
+
+                const card = document.createElement('div');
+                card.className = "synth-panel p-5 rounded-2xl border border-neonPurple/30 flex flex-col justify-between space-y-4";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="font-orbitron font-bold text-white text-sm">${subj}</h3>
+                            <span class="text-xs font-orbitron font-bold px-2.5 py-1 rounded-md border ${badgeColor}">
+                                ${metrics.currentPct}%
+                            </span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2 mb-3 overflow-hidden border border-slate-800">
+                            <div class="bg-gradient-to-r from-neonPurple via-neonCyan to-emerald-400 h-2 rounded-full" style="width: ${metrics.currentPct}%"></div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-1.5 text-center font-mono text-xs mb-3">
+                            <div class="bg-slate-950/70 p-2 rounded border border-slate-800">
+                                <span class="text-emerald-400 font-bold block text-xs">${metrics.presentSoFar}</span>
+                                <span class="text-[9px] text-slate-500">Present</span>
+                            </div>
+                            <div class="bg-slate-950/70 p-2 rounded border border-slate-800">
+                                <span class="text-neonPink font-bold block text-xs">${metrics.absentSoFar}</span>
+                                <span class="text-[9px] text-slate-500">Absent</span>
+                            </div>
+                            <div class="bg-slate-950/70 p-2 rounded border border-slate-800">
+                                <span class="text-neonYellow font-bold block text-xs">${metrics.canceledSoFar}</span>
+                                <span class="text-[9px] text-slate-500">Canceled</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1.5 text-xs font-mono">
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Future Classes Projected:</span>
+                                <span class="text-neonCyan font-bold">${metrics.projectedFutureClasses}</span>
+                            </div>
+                            ${metrics.currentPct >= 75 ? `
+                            <div class="flex justify-between text-emerald-400">
+                                <span>Safe-To-Miss Margin:</span>
+                                <span class="font-bold">${metrics.safeToMiss} Classes</span>
+                            </div>
+                            ` : `
+                            <div class="flex justify-between text-neonPink">
+                                <span>Consecutive Catchup Needed:</span>
+                                <span class="font-bold">${metrics.catchupNeeded} Classes</span>
+                            </div>
+                            `}
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Vacations
+        function handleAddVacation(e) {
+            e.preventDefault();
+            const name = document.getElementById('vacation-name-input').value.trim();
+            const startDate = document.getElementById('vacation-start-input').value;
+            const endDate = document.getElementById('vacation-end-input').value;
+
+            state.vacations.push({ id: Date.now().toString(), name, startDate, endDate });
+            saveProfileState();
+            document.getElementById('vacation-name-input').value = '';
+            renderVacationsList();
+            renderAllViews();
+        }
+
+        function deleteVacation(id) {
+            state.vacations = state.vacations.filter(v => v.id !== id);
+            saveProfileState();
+            renderVacationsList();
+            renderAllViews();
+        }
+
+        function renderVacationsList() {
+            const tbody = document.getElementById('vacations-tbody');
+            tbody.innerHTML = '';
+
+            if (state.vacations.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-500 italic">No vacation periods registered.</td></tr>`;
+                return;
+            }
+
+            state.vacations.forEach(v => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-2.5 px-4 font-bold text-neonYellow">${v.name}</td>
+                    <td class="py-2.5 px-4 text-slate-300">${v.startDate}</td>
+                    <td class="py-2.5 px-4 text-slate-300">${v.endDate}</td>
+                    <td class="py-2.5 px-4 text-right">
+                        <button onclick="deleteVacation('${v.id}')" class="text-slate-500 hover:text-neonPink"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Analytics & Trend Chart
+        function renderAnalyticsAndChart() {
+            const tbody = document.getElementById('analytics-history-tbody');
+            tbody.innerHTML = '';
+
+            const dates = Object.keys(state.dailyTasks).sort().reverse();
+
+            if (dates.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500 italic">No historical logs available.</td></tr>`;
+            } else {
+                dates.forEach(d => {
+                    const tasks = state.dailyTasks[d] || [];
+                    const completedCount = tasks.filter(t => t.completed).length;
+                    let scheduledTotal = 0;
+                    let actualTotal = 0;
+
+                    tasks.forEach(t => {
+                        scheduledTotal += t.duration;
+                        if (t.completed) actualTotal += (t.actualSpent || t.duration);
+                    });
+
+                    const score = state.nightEfficiencyLogs[d] !== undefined ? state.nightEfficiencyLogs[d] + '%' : 'Pending';
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="py-2.5 px-4 text-neonCyan font-bold">${d}</td>
+                        <td class="py-2.5 px-4">${completedCount} / ${tasks.length}</td>
+                        <td class="py-2.5 px-4">${scheduledTotal} mins</td>
+                        <td class="py-2.5 px-4">${actualTotal} mins</td>
+                        <td class="py-2.5 px-4">
+                            <span class="px-2 py-0.5 rounded text-xs font-bold font-orbitron ${score !== 'Pending' ? 'bg-neonPink/20 text-neonPink border border-neonPink/30' : 'bg-slate-800 text-slate-500'}">
+                                ${score}
+                            </span>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Render 7-day trend chart
+            const chartContainer = document.getElementById('weekly-chart-container');
+            chartContainer.innerHTML = '';
+
+            const last7Days = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                last7Days.push(d.toISOString().split('T')[0]);
+            }
+
+            last7Days.forEach(d => {
+                const val = state.nightEfficiencyLogs[d] || 0;
+                const barHeight = Math.max(10, val);
+
+                const col = document.createElement('div');
+                col.className = "flex-1 flex flex-col items-center gap-1 group";
+                col.innerHTML = `
+                    <div class="text-[9px] text-neonCyan opacity-0 group-hover:opacity-100 transition-opacity font-orbitron">${val}%</div>
+                    <div class="w-full max-w-[28px] bg-gradient-to-t from-neonPurple to-neonPink rounded-t shadow-glow-pink transition-all duration-500" style="height: ${barHeight}%"></div>
+                    <div class="text-[9px] text-slate-500 font-mono mt-1">${d.slice(8)}</div>
+                `;
+                chartContainer.appendChild(col);
+            });
+        }
+
+        // Modals & Extras
+        function openExtraClassModal() { document.getElementById('modal-extra-class').classList.remove('hidden'); }
+        function openAddRoutineSlotModal() { document.getElementById('modal-routine-slot').classList.remove('hidden'); }
+        function openAddSubjectModal() { document.getElementById('modal-new-subject').classList.remove('hidden'); }
+        function openImportModal() { document.getElementById('modal-import').classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function handleSaveExtraClass(e) {
+            e.preventDefault();
+            const subject = document.getElementById('modal-extra-subject').value.trim();
+            const startTime = document.getElementById('modal-extra-start').value;
+            const endTime = document.getElementById('modal-extra-end').value;
+
+            if (!state.extraClasses[state.currentDate]) state.extraClasses[state.currentDate] = [];
+            state.extraClasses[state.currentDate].push({ id: Date.now().toString(), subject, startTime, endTime });
+            if (!state.subjects.includes(subject)) state.subjects.push(subject);
+
+            saveProfileState();
+            closeModal('modal-extra-class');
+            renderTodayClasses();
+            renderAttendanceGrid();
+        }
+
+        function handleSaveSubject(e) {
+            e.preventDefault();
+            const name = document.getElementById('modal-subject-name').value.trim();
+            if (name && !state.subjects.includes(name)) {
+                state.subjects.push(name);
+                saveProfileState();
+                renderAttendanceGrid();
+            }
+            closeModal('modal-new-subject');
+        }
+
+        // Data Export & Import
+        function exportDataJSON() {
+            const jsonStr = JSON.stringify(state, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chrono_synth_backup_${state.currentDate}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function handleImportJSON() {
+            try {
+                const raw = document.getElementById('import-json-input').value;
+                const parsed = JSON.parse(raw);
+                if (parsed && typeof parsed === 'object') {
+                    state = parsed;
+                    saveProfileState();
+                    closeModal('modal-import');
+                    renderAllViews();
+                    alert("Backup state restored successfully!");
+                }
+            } catch (err) {
+                alert("Invalid JSON format string.");
+            }
+        }
+
+        // Gemini AI Assistant Call
+        function toggleGeminiChat() {
+            document.getElementById('gemini-chat-window').classList.toggle('hidden');
+        }
+
+        async function handleGeminiQuery(e) {
+            e.preventDefault();
+            const inputEl = document.getElementById('gemini-input');
+            const query = inputEl.value.trim();
+            if (!query) return;
+
+            const msgContainer = document.getElementById('gemini-messages');
+
+            const userMsg = document.createElement('div');
+            userMsg.className = "bg-neonCyan/10 border border-neonCyan/30 p-2.5 rounded-xl text-slate-200 text-right";
+            userMsg.innerHTML = `<span class="text-neonCyan font-bold">YOU:</span> ${query}`;
+            msgContainer.appendChild(userMsg);
+
+            inputEl.value = '';
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = "bg-neonPurple/20 border border-neonPurple/30 p-2.5 rounded-xl text-slate-400 italic";
+            loadingMsg.id = "gemini-loading";
+            loadingMsg.innerText = "Processing query...";
+            msgContainer.appendChild(loadingMsg);
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+
+            try {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+                const systemPrompt = "You are CHRONO-SYNTH AI assistant. Help the user with task management, study routines, 75% attendance planning, and Fedora terminal commands.";
+
+                const payload = {
+                    contents: [{ parts: [{ text: query }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                document.getElementById('gemini-loading')?.remove();
+
+                const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
+
+                const aiMsg = document.createElement('div');
+                aiMsg.className = "bg-neonPurple/20 border border-neonPurple/30 p-2.5 rounded-xl text-slate-200";
+                aiMsg.innerHTML = `<span class="text-neonCyan font-bold">CYBER-AI:</span> ${aiText}`;
+                msgContainer.appendChild(aiMsg);
+
+            } catch (err) {
+                document.getElementById('gemini-loading')?.remove();
+                const errorMsg = document.createElement('div');
+                errorMsg.className = "bg-neonPink/20 border border-neonPink/30 p-2.5 rounded-xl text-neonPink";
+                errorMsg.innerHTML = `<span class="font-bold">ERROR:</span> Network request failed.`;
+                msgContainer.appendChild(errorMsg);
+            }
+
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+        }
+
+        // 3D Animated Grid & Sun Canvas
+        function initSynthCanvas() {
+            const canvas = document.getElementById('synth-canvas');
+            const ctx = canvas.getContext('2d');
+            let width, height, offset = 0;
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+                const horizonY = height * 0.55;
+
+                // Background gradient
+                const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+                bgGrad.addColorStop(0, '#0d0221');
+                bgGrad.addColorStop(0.55, '#2a0845');
+                bgGrad.addColorStop(1, '#05010d');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, width, height);
+
+                // Sun
+                const sunRadius = Math.min(width, height) * 0.16;
+                const sunX = width / 2;
+                const sunY = horizonY - sunRadius * 0.4;
+
+                const sunGrad = ctx.createLinearGradient(0, sunY - sunRadius, 0, sunY + sunRadius);
+                sunGrad.addColorStop(0, '#ffea00');
+                sunGrad.addColorStop(0.5, '#ff007f');
+                sunGrad.addColorStop(1, '#9d00ff');
+
+                ctx.save();
+                ctx.shadowColor = '#ff007f';
+                ctx.shadowBlur = 35;
+                ctx.fillStyle = sunGrad;
+                ctx.beginPath();
+                ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // Sun blind cuts
+                ctx.fillStyle = '#150833';
+                for (let i = 0; i < 5; i++) {
+                    const cutY = sunY + (i * 12) - 8;
+                    if (cutY > sunY - sunRadius && cutY < sunY + sunRadius) {
+                        ctx.fillRect(sunX - sunRadius - 10, cutY, sunRadius * 2 + 20, 2.5 + i);
+                    }
+                }
+
+                // Floor Perspective Grid
+                ctx.save();
+                ctx.strokeStyle = 'rgba(0, 243, 255, 0.35)';
+                ctx.lineWidth = 1.2;
+                ctx.shadowColor = '#00f3ff';
+                ctx.shadowBlur = 6;
+
+                const numVLines = 32;
+                for (let i = -numVLines; i <= numVLines; i++) {
+                    const xStart = sunX + (i * (width / numVLines) * 2.2);
+                    ctx.beginPath();
+                    ctx.moveTo(sunX, horizonY);
+                    ctx.lineTo(xStart, height);
+                    ctx.stroke();
+                }
+
+                offset = (offset + 0.7) % 28;
+                for (let y = horizonY; y < height; y += (y - horizonY) * 0.12 + 2) {
+                    const lineY = y + offset;
+                    if (lineY > horizonY && lineY < height) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, lineY);
+                        ctx.lineTo(width, lineY);
+                        ctx.stroke();
+                    }
+                }
+                ctx.restore();
+
+                requestAnimationFrame(draw);
+            }
+
+            draw();
+        }
+    </script>
+</body>
+</html>
